@@ -1,17 +1,8 @@
-from django.urls import path
-from .views import EmployeeListCreateView, EmployeeDetailView
+from django.urls import include, path
+
+from .routers import router
 
 
 urlpatterns = [
-    path(
-        "employees/",
-        EmployeeListCreateView.as_view(),
-        name="employee-list-create"
-    ),
-
-    path(
-        "employees/<int:id>/",
-        EmployeeDetailView.as_view(),
-        name="employee-detail"
-    ),
+    path("", include(router.urls)),
 ]
