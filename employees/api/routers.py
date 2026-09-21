@@ -10,3 +10,6 @@ router.register(
     EmployeeViewSet,
     basename="employee"
 )
+
+
+urlpatterns = router.urls
