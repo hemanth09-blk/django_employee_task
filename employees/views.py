@@ -7,7 +7,11 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import Employee
-
+from .orm_reports import (
+    get_department_summary,
+    get_project_summary,
+    get_salary_summary,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +25,18 @@ def employee_to_dict(employee):
         "last_name": employee.last_name,
         "email": employee.email,
         "phone": employee.phone,
-        "department": employee.department,
+        "department": (
+            employee.department.name
+            if employee.department
+            else None
+        ),
         "designation": employee.designation,
         "salary": str(employee.salary),
-        "joining_date": employee.joining_date,
+        "joining_date": (
+            employee.joining_date.isoformat()
+            if employee.joining_date
+            else None
+        ),
         "is_active": employee.is_active,
     }
 
@@ -43,34 +55,42 @@ def employee_list(request):
         # Search
         search = request.GET.get("search")
         if search:
-            employees = employees.filter(
-                first_name__icontains=search
-            ) | employees.filter(
-                last_name__icontains=search
-            ) | employees.filter(
-                employee_code__icontains=search
-            ) | employees.filter(
-                email__icontains=search
+            employees = (
+                employees.filter(first_name__icontains=search)
+                | employees.filter(last_name__icontains=search)
+                | employees.filter(employee_code__icontains=search)
+                | employees.filter(email__icontains=search)
             )
 
         # Filter by department
         department = request.GET.get("department")
         if department:
-            employees = employees.filter(department__iexact=department)
+            employees = employees.filter(
+                department_name_iexact=department
+            )
 
         # Filter by active status
         is_active = request.GET.get("is_active")
+
         if is_active is not None:
             if is_active.lower() == "true":
                 employees = employees.filter(is_active=True)
+
             elif is_active.lower() == "false":
                 employees = employees.filter(is_active=False)
 
-        data = [employee_to_dict(employee) for employee in employees]
+        data = [
+            employee_to_dict(employee)
+            for employee in employees
+        ]
 
         logger.info("Employee list retrieved successfully")
 
-        return JsonResponse(data, safe=False, status=200)
+        return JsonResponse(
+            data,
+            safe=False,
+            status=200,
+        )
 
     # POST - Create employee
     elif request.method == "POST":
@@ -83,7 +103,7 @@ def employee_list(request):
                 last_name=data["last_name"],
                 email=data["email"],
                 phone=data.get("phone", ""),
-                department=data["department"],
+                department_id=data["department"],
                 designation=data["designation"],
                 salary=data["salary"],
                 joining_date=data["joining_date"],
@@ -104,7 +124,9 @@ def employee_list(request):
             )
 
         except json.JSONDecodeError:
-            logger.warning("Invalid JSON received while creating employee")
+            logger.warning(
+                "Invalid JSON received while creating employee"
+            )
 
             return JsonResponse(
                 {"error": "Invalid JSON data"},
@@ -119,7 +141,9 @@ def employee_list(request):
 
             return JsonResponse(
                 {
-                    "error": f"Missing required field: {error.args[0]}"
+                    "error": (
+                        f"Missing required field: {error.args[0]}"
+                    )
                 },
                 status=400,
             )
@@ -130,7 +154,12 @@ def employee_list(request):
             )
 
             return JsonResponse(
-                {"error": "Invalid employee data or duplicate employee"},
+                {
+                    "error": (
+                        "Invalid employee data or "
+                        "duplicate employee"
+                    )
+                },
                 status=400,
             )
 
@@ -153,7 +182,10 @@ def employee_detail(request, id):
         employee = Employee.objects.get(id=id)
 
     except Employee.DoesNotExist:
-        logger.warning("Employee not found: %s", id)
+        logger.warning(
+            "Employee not found: %s",
+            id,
+        )
 
         return JsonResponse(
             {"error": "Employee not found"},
@@ -162,7 +194,10 @@ def employee_detail(request, id):
 
     # GET - View employee
     if request.method == "GET":
-        logger.info("Employee retrieved successfully: %s", id)
+        logger.info(
+            "Employee retrieved successfully: %s",
+            id,
+        )
 
         return JsonResponse(
             employee_to_dict(employee),
@@ -199,9 +234,9 @@ def employee_detail(request, id):
                 employee.phone,
             )
 
-            employee.department = data.get(
+            employee.department_id = data.get(
                 "department",
-                employee.department,
+                employee.department_id,
             )
 
             employee.designation = data.get(
@@ -227,7 +262,10 @@ def employee_detail(request, id):
             employee.full_clean()
             employee.save()
 
-            logger.info("Employee updated successfully: %s", id)
+            logger.info(
+                "Employee updated successfully: %s",
+                id,
+            )
 
             return JsonResponse(
                 {
@@ -263,7 +301,10 @@ def employee_detail(request, id):
     elif request.method == "DELETE":
         employee.delete()
 
-        logger.info("Employee deleted successfully: %s", id)
+        logger.info(
+            "Employee deleted successfully: %s",
+            id,
+        )
 
         return JsonResponse(
             {"message": "Employee deleted successfully"},
@@ -273,4 +314,128 @@ def employee_detail(request, id):
     return JsonResponse(
         {"error": "Method not allowed"},
         status=405,
+    )
+
+
+# ============================================================
+# DB-003 — ADVANCED ORM REPORTING APIs
+# ============================================================
+
+
+def department_summary(request):
+    """
+    DB-003:
+    Department-wise employee statistics.
+
+    GET /api/v1/reports/department-summary/
+    """
+
+    if request.method != "GET":
+        return JsonResponse(
+            {"error": "Method not allowed"},
+            status=405,
+        )
+
+    departments = get_department_summary()
+
+    data = []
+
+    for department in departments:
+        data.append({
+            "department": department.name,
+            "employee_count": department.employee_count,
+            "average_salary": (
+                float(department.average_salary)
+                if department.average_salary is not None
+                else 0
+            ),
+            "maximum_salary": (
+                float(department.maximum_salary)
+                if department.maximum_salary is not None
+                else 0
+            ),
+        })
+
+    return JsonResponse(
+        data,
+        safe=False,
+        status=200,
+    )
+
+
+def project_summary(request):
+    """
+    DB-003:
+    Project-wise employee statistics.
+
+    GET /api/v1/reports/project-summary/
+    """
+
+    if request.method != "GET":
+        return JsonResponse(
+            {"error": "Method not allowed"},
+            status=405,
+        )
+
+    projects = get_project_summary()
+
+    data = []
+
+    for project in projects:
+        data.append({
+            "project": project.name,
+            "project_code": project.project_code,
+            "employee_count": project.employee_count,
+        })
+
+    return JsonResponse(
+        data,
+        safe=False,
+        status=200,
+    )
+
+
+def salary_summary(request):
+    """
+    DB-003:
+    Overall salary statistics.
+
+    GET /api/v1/reports/salary-summary/
+    """
+
+    if request.method != "GET":
+        return JsonResponse(
+            {"error": "Method not allowed"},
+            status=405,
+        )
+
+    summary = get_salary_summary()
+
+    data = {
+        "total_employees": summary["total_employees"],
+        "average_salary": (
+            float(summary["average_salary"])
+            if summary["average_salary"] is not None
+            else 0
+        ),
+        "maximum_salary": (
+            float(summary["maximum_salary"])
+            if summary["maximum_salary"] is not None
+            else 0
+        ),
+        "minimum_salary": (
+            float(summary["minimum_salary"])
+            if summary["minimum_salary"] is not None
+            else 0
+        ),
+        "total_salary_expenditure": (
+            float(summary["total_salary_expenditure"])
+            if summary["total_salary_expenditure"] is not None
+            else 0
+        ),
+    }
+
+    return JsonResponse(
+        data,
+        status=200,
     )
