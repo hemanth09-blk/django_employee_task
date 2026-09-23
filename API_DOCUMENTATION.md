@@ -2,19 +2,20 @@
 
 ## 1. Overview
 
-Employee Management REST API is built using Django REST Framework.
+Employee Management REST API is a Django REST Framework API used to manage employee records.
 
-The API provides:
+### Features
 
 - Employee CRUD operations
 - ViewSets and Routers
 - Serializer validation
+- Pagination
 - Filtering
 - Searching
 - Ordering
-- Pagination
 - Standardized error responses
 - Active employee filtering
+- PostgreSQL database integration
 
 ---
 

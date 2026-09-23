@@ -48,7 +48,7 @@ class EmployeeAPITest(TestCase):
         response = self.client.post(
             reverse("employee-list"),
             data=data,
-            content_type="application/json"
+            format="json"
         )
         self.assertEqual(response.status_code, 201)
     def test_update_employee(self):
@@ -59,8 +59,9 @@ class EmployeeAPITest(TestCase):
         response = self.client.put(
             reverse("employee-detail", args=[self.employee.id]),
             data=data,
-            content_type="application/json"
+            format="json"
         )
+        print("UPDATE RESPONSE:", response.status_code, response.data)
         self.assertEqual(response.status_code, 200)
     def test_delete_employee(self):
         response = self.client.delete(

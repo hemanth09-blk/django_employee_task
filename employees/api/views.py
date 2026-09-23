@@ -37,7 +37,6 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         "last_name",
         "email",
         "phone",
-        "department",
         "designation",
     ]
 
