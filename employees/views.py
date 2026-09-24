@@ -2,7 +2,7 @@ import json
 import logging
 
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
+from django.db import IntegrityError, connection
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
@@ -437,5 +437,157 @@ def salary_summary(request):
 
     return JsonResponse(
         data,
+        status=200,
+    )
+# ============================================================
+# DB-004 — QUERY OPTIMIZATION
+# ============================================================
+
+
+def employee_details_unoptimized(request):
+    """
+    DB-004:
+    Intentional N+1 query example.
+
+    GET /api/v1/employees/details/
+    """
+
+    if request.method != "GET":
+        return JsonResponse(
+            {"error": "Method not allowed"},
+            status=405,
+        )
+
+    # Clear previous query records
+    connection.queries_log.clear()
+
+    # Intentionally unoptimized queryset
+    employees = Employee.objects.all().order_by("employee_code")
+
+    data = []
+
+    for employee in employees:
+        data.append({
+            "id": employee.id,
+            "employee_code": employee.employee_code,
+            "first_name": employee.first_name,
+            "last_name": employee.last_name,
+            "department": (
+                employee.department.name
+                if employee.department
+                else None
+            ),
+            "profile": (
+                {
+                    "date_of_birth": (
+                        employee.profile.date_of_birth.isoformat()
+                        if employee.profile.date_of_birth
+                        else None
+                    ),
+                    "address": employee.profile.address,
+                    "emergency_contact": employee.profile.emergency_contact,
+                    "blood_group": employee.profile.blood_group,
+                }
+                if hasattr(employee, "profile")
+                else None
+            ),
+            "projects": [
+                {
+                    "id": project.id,
+                    "name": project.name,
+                    "project_code": project.project_code,
+                    "status": project.status,
+                }
+                for project in employee.projects.all()
+            ],
+        })
+
+    query_count = len(connection.queries)
+
+    logger.info(
+        "DB-004 unoptimized query count: %s",
+        query_count,
+    )
+
+    return JsonResponse(
+        {
+            "query_count": query_count,
+            "data": data,
+        },
+        status=200,
+    )
+def employee_details_optimized(request):
+    """
+    DB-004:
+    Optimized employee details using select_related()
+    and prefetch_related() to reduce N+1 queries.
+
+    GET /api/v1/employees/details-optimized/
+    """
+
+    if request.method != "GET":
+        return JsonResponse(
+            {"error": "Method not allowed"},
+            status=405,
+        )
+
+    connection.queries_log.clear()
+
+    employees = (
+        Employee.objects
+        .select_related("department", "profile")
+        .prefetch_related("projects")
+        .all()
+        .order_by("employee_code")
+    )
+
+    data = []
+
+    for employee in employees:
+        data.append(
+            {
+                "id": employee.id,
+                "employee_code": employee.employee_code,
+                "first_name": employee.first_name,
+                "last_name": employee.last_name,
+                "department": (
+                    employee.department.name
+                    if employee.department
+                    else None
+                ),
+                "profile": (
+                    {
+                        "date_of_birth": employee.profile.date_of_birth,
+                        "address": employee.profile.address,
+                        "emergency_contact": employee.profile.emergency_contact,
+                        "blood_group": employee.profile.blood_group,
+                    }
+                    if hasattr(employee, "profile")
+                    else None
+                ),
+                "projects": [
+                    {
+                        "id": project.id,
+                        "name": project.name,
+                        "project_code": project.project_code,
+                        "status": project.status,
+                    }
+                    for project in employee.projects.all()
+                ],
+            }
+        )
+
+    query_count = len(connection.queries)
+
+    logger.info(
+        "DB-004 optimized query count: %s",
+        query_count,
+    )
+
+    return JsonResponse(
+        {
+            "query_count": query_count,
+            "data": data,
+        },
         status=200,
     )

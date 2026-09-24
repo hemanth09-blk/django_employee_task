@@ -31,4 +31,5 @@ urlpatterns = [
         views.salary_summary,
         name="salary-summary",
     ),
-]
+
+]    

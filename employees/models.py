@@ -63,6 +63,11 @@ class Employee(models.Model):
         related_name="employees",
         blank=True
     )
+    class Meta:
+        indexes = [
+            models.Index(fields=["joining_date"]),
+            models.Index(fields=["department", "is_active"]),
+        ]
 
     def __str__(self):
         return f"{self.employee_code} - {self.first_name} {self.last_name}"

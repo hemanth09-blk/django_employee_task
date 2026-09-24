@@ -2,10 +2,27 @@ from django.urls import include, path
 
 from .routers import router
 from . import report_views
+from employees.views import (
+    employee_details_unoptimized,
+    employee_details_optimized,
+)    
 
 
 urlpatterns = [
-    path("", include(router.urls)),
+    # DB-004 Query Optimization
+    path(
+        "employees/details/",
+        employee_details_unoptimized,
+        name="employee-details",
+    ),
+
+    path(
+        "employees/details-optimized/",
+        employee_details_optimized,
+        name="employee-details-optimized",
+    ),
+
+    path(  "",  include(router.urls)),
 
     path(
         "reports/salary-summary/",
@@ -54,4 +71,5 @@ urlpatterns = [
         report_views.employees_without_projects,
         name="employees-without-projects",
     ),
-]
+
+]    
