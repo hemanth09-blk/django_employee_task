@@ -93,3 +93,70 @@ class EmployeeProfile(models.Model):
 
     def __str__(self):
         return f"Profile - {self.employee.employee_code}"
+    
+class EmployeeTransfer(models.Model):
+    STATUS_CHOICES = [
+        ("PENDING", "Pending"),
+        ("APPROVED", "Approved"),
+        ("REJECTED", "Rejected"),
+        ("COMPLETED", "Completed"),
+    ]
+
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
+        related_name="transfer_history"
+    )
+
+    from_department = models.ForeignKey(
+        Department,
+        on_delete=models.PROTECT,
+        related_name="transfers_from"
+    )
+
+    to_department = models.ForeignKey(
+        Department,
+        on_delete=models.PROTECT,
+        related_name="transfers_to"
+    )
+
+    reason = models.TextField()
+
+    transferred_by = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
+    transferred_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="PENDING"
+    )
+
+    class Meta:
+        ordering = ["-transferred_at"]
+        indexes = [
+            models.Index(
+                fields=["employee", "transferred_at"]
+            ),
+            models.Index(
+                fields=["from_department"]
+            ),
+            models.Index(
+                fields=["to_department"]
+            ),
+            models.Index(
+                fields=["status"]
+            ),
+        ]
+
+    def _str_(self):
+        return (
+            f"{self.employee.employee_code}: "
+            f"{self.from_department.code} → "
+            f"{self.to_department.code}"
+        )

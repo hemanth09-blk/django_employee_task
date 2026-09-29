@@ -146,3 +146,30 @@ class EmployeeSerializer(serializers.ModelSerializer):
         """
 
         return attrs
+    from rest_framework import serializers
+
+from employees.models import EmployeeTransfer
+
+
+class EmployeeTransferSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = EmployeeTransfer
+        fields = [
+            "id",
+            "employee",
+            "from_department",
+            "to_department",
+            "reason",
+            "transferred_by",
+            "transferred_at",
+            "status",
+        ]
+
+        read_only_fields = [
+            "id",
+            "employee",
+            "from_department",
+            "transferred_at",
+            "status",
+        ]
