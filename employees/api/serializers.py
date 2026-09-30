@@ -1,8 +1,11 @@
 from decimal import Decimal
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
 from rest_framework import serializers
 
-from employees.models import Employee
+from employees.models import Employee, EmployeeTransfer
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
@@ -173,3 +176,143 @@ class EmployeeTransferSerializer(serializers.ModelSerializer):
             "transferred_at",
             "status",
         ]
+        # =========================================================
+# User Registration Serializer
+# =========================================================
+
+class RegistrationSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(
+        write_only=True,
+        required=True
+    )
+
+    password_confirmation = serializers.CharField(
+        write_only=True,
+        required=True
+    )
+    email = serializers.EmailField(
+        required=True
+    )   
+
+    class Meta:
+        model = User
+        fields = [
+            "username",
+            "email",
+            "password",
+            "password_confirmation",
+            "first_name",
+            "last_name",
+        ]
+
+    def validate_username(self, value):
+        """
+        Username must be unique.
+        """
+
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError(
+                "Username already exists."
+            )
+
+        return value
+
+    def validate_email(self, value):
+        """
+        Email must be valid and unique.
+        """
+
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError(
+                "Email already exists."
+            )
+
+        return value.lower()
+
+    def validate_password(self, value):
+        """
+        Validate password strength using Django's
+        built-in password validators.
+        """
+
+        validate_password(value)
+        return value
+
+    def validate(self, attrs):
+        """
+        Check password confirmation.
+        """
+
+        if attrs.get("password") != attrs.get("password_confirmation"):
+            raise serializers.ValidationError({
+                "password_confirmation": "Passwords do not match."
+            })
+
+        return attrs
+
+    def create(self, validated_data):
+        """
+        Create the user using Django's create_user()
+        so the password is securely hashed.
+        """
+
+        validated_data.pop("password_confirmation", None)
+
+        user = User.objects.create_user(
+            username=validated_data["username"],
+            email=validated_data["email"],
+            password=validated_data["password"],
+            first_name=validated_data.get("first_name", ""),
+            last_name=validated_data.get("last_name", ""),
+        )
+
+        return user
+        # =========================================================
+# User Login Serializer
+# =========================================================
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField(
+        required=True
+    )
+
+    password = serializers.CharField(
+        required=True,
+        write_only=True
+    )
+
+    def validate(self, attrs):
+
+        username = attrs.get("username")
+        password = attrs.get("password")
+
+        # Check whether the user exists
+        try:
+            user = User.objects.get(
+                username__iexact=username
+            )
+        except User.DoesNotExist:
+            raise serializers.ValidationError(
+                "Invalid username or password."
+            )
+
+        # Prevent inactive users from logging in
+        if not user.is_active:
+            raise serializers.ValidationError(
+                "User account is inactive."
+            )
+
+        # Authenticate username + password
+        authenticated_user = authenticate(
+            username=user.username,
+            password=password
+        )
+
+        if authenticated_user is None:
+            raise serializers.ValidationError(
+                "Invalid username or password."
+            )
+
+        attrs["user"] = authenticated_user
+
+        return attrs

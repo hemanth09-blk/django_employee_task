@@ -2,6 +2,7 @@ from django.urls import include, path
 
 from .routers import router
 from . import report_views
+from.views import LoginView, RegisterView
 from employees.views import (
     employee_details_unoptimized,
     employee_details_optimized,
@@ -9,6 +10,16 @@ from employees.views import (
 
 
 urlpatterns = [
+    path(
+    "auth/login/",
+    LoginView.as_view(),
+    name="login"
+),
+    path(
+    "auth/register/",
+    RegisterView.as_view(),
+    name="auth-register",
+),
     # DB-004 Query Optimization
     path(
         "employees/details/",

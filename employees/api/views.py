@@ -1,3 +1,5 @@
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
 from rest_framework import filters, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -6,7 +8,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from ..models import Employee, EmployeeTransfer
 from ..services.employee_transfer_service import EmployeeTransferService
-from .serializers import EmployeeSerializer, EmployeeTransferSerializer
+from .serializers import EmployeeSerializer, EmployeeTransferSerializer, RegistrationSerializer, LoginSerializer
 from .pagination import EmployeePagination
 
 
@@ -199,4 +201,74 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         return Response(
             serializer.data,
             status=status.HTTP_200_OK,
+        )
+    # =====================================================
+# SEC-001: User Registration API
+# =====================================================
+
+class RegisterView(APIView):
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+
+        serializer = RegistrationSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user = serializer.save()
+
+            return Response(
+                {
+                    "message": "User registered successfully.",
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                    }
+                },
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    # =====================================================
+# SEC-001: User Login API
+# =====================================================
+
+class LoginView(APIView):
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+
+        serializer = LoginSerializer(
+            data=request.data
+        )
+
+        if serializer.is_valid():
+            user = serializer.validated_data["user"]
+
+            return Response(
+                {
+                    "message": "Login successful.",
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                    }
+                },
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
         )
