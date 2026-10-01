@@ -3,6 +3,7 @@ from django.urls import include, path
 from .routers import router
 from . import report_views
 from.views import LoginView, RegisterView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from employees.views import (
     employee_details_unoptimized,
     employee_details_optimized,
@@ -10,6 +11,16 @@ from employees.views import (
 
 
 urlpatterns = [
+    path(
+        "auth/token/",
+        TokenObtainPairView.as_view(),
+        name="token_obtain_pair"
+    ),
+    path(
+        "auth/token/refresh/",
+        TokenRefreshView.as_view(),
+        name="token_refresh"
+    ),
     path(
     "auth/login/",
     LoginView.as_view(),
