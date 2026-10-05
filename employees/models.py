@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.contrib.auth.models import User 
 
 class Department(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -37,6 +37,14 @@ class Project(models.Model):
 
 
 class Employee(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="employee",
+    )
+    
     employee_code = models.CharField(max_length=20, unique=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)

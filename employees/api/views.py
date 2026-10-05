@@ -3,21 +3,42 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import filters, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django_filters.rest_framework import DjangoFilterBackend
 
+from .permissions import (
+    IsAdmin,
+    IsHR,
+    IsManager,
+    IsEmployee,
+    IsAdminOrHR,
+    IsAdminOrHROrManager,
+    IsAdminOrHROrManagerOrEmployee,
+)
+
 from ..models import Employee, EmployeeTransfer
 from ..services.employee_transfer_service import EmployeeTransferService
-from .serializers import EmployeeSerializer, EmployeeTransferSerializer, RegistrationSerializer, LoginSerializer
+
+from .serializers import (
+    EmployeeSerializer,
+    EmployeeTransferSerializer,
+    RegistrationSerializer,
+    LoginSerializer,
+)
+
 from .pagination import EmployeePagination
 
+
+# =====================================================
+# Employee ViewSet
+# =====================================================
 
 class EmployeeViewSet(viewsets.ModelViewSet):
 
     queryset = Employee.objects.all().order_by("id")
     serializer_class = EmployeeSerializer
     pagination_class = EmployeePagination
-    permission_classes = [IsAuthenticated]
 
     filter_backends = [
         DjangoFilterBackend,
@@ -51,17 +72,104 @@ class EmployeeViewSet(viewsets.ModelViewSet):
 
     ordering = ["id"]
 
+    # =================================================
+    # SEC-003: Role-Based Permissions
+    # =================================================
+
+    def get_permissions(self):
+
+        # ADMIN + HR
+        # Can create employees
+        if self.action == "create":
+            permission_classes = [
+                IsAdminOrHR
+            ]
+
+        # ADMIN + HR
+        # Can update employees
+        elif self.action in [
+            "update",
+            "partial_update",
+        ]:
+            permission_classes = [
+                IsAdminOrHR
+            ]
+
+        # ADMIN only
+        # Can delete employees
+        elif self.action == "destroy":
+            permission_classes = [
+                IsAdmin
+            ]
+
+        # ADMIN + HR + MANAGER
+        # Can view employee list
+        elif self.action in [
+            "list",
+            "active",
+        ]:
+            permission_classes = [
+                IsAdminOrHROrManager
+            ]
+
+        # ADMIN + HR + MANAGER + EMPLOYEE
+        # Can retrieve an employee
+        elif self.action == "retrieve":
+            permission_classes = [
+                IsAdminOrHROrManagerOrEmployee
+            ]
+
+        # ADMIN + HR
+        # Employee department transfer
+        elif self.action == "transfer":
+            permission_classes = [
+                IsAdminOrHR
+            ]
+
+        # ADMIN + HR + MANAGER
+        # View transfer history
+        elif self.action == "transfer_history":
+            permission_classes = [
+                IsAdminOrHROrManager
+            ]
+
+        # Default
+        else:
+            permission_classes = [
+                IsAuthenticated
+            ]
+
+        return [
+            permission()
+            for permission in permission_classes
+        ]
+
+    # =================================================
+    # Error Handling
+    # =================================================
+
     def handle_exception(self, exc):
+
         response = super().handle_exception(exc)
 
-        if response is not None and response.status_code == 404:
+        if (
+            response is not None
+            and response.status_code == 404
+        ):
             response.data = {
                 "detail": "Employee not found."
             }
 
         return response
 
-    @action(detail=False, methods=["get"])
+    # =================================================
+    # GET ACTIVE EMPLOYEES
+    # =================================================
+
+    @action(
+        detail=False,
+        methods=["get"]
+    )
     def active(self, request):
 
         queryset = self.filter_queryset(
@@ -73,10 +181,12 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
 
         if page is not None:
+
             serializer = self.get_serializer(
                 page,
                 many=True
             )
+
             return self.get_paginated_response(
                 serializer.data
             )
@@ -86,15 +196,24 @@ class EmployeeViewSet(viewsets.ModelViewSet):
             many=True
         )
 
-        return Response(serializer.data)
+        return Response(
+            serializer.data
+        )
 
-    # DB-005
+    # =================================================
+    # DB-005: EMPLOYEE TRANSFER
+    # =================================================
+
     @action(
         detail=True,
         methods=["post"],
         url_path="transfer"
     )
-    def transfer(self, request, pk=None):
+    def transfer(
+        self,
+        request,
+        pk=None
+    ):
 
         employee_id = pk
 
@@ -108,22 +227,28 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         )
 
         if not to_department:
+
             return Response(
                 {
-                    "error": "to_department is required."
+                    "detail": "to_department is required."
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if not reason or not reason.strip():
+        if (
+            not reason
+            or not reason.strip()
+        ):
+
             return Response(
                 {
-                    "error": "reason is required."
+                    "detail": "reason is required."
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
+
             transferred_by = (
                 str(request.user)
                 if request.user.is_authenticated
@@ -148,20 +273,25 @@ class EmployeeViewSet(viewsets.ModelViewSet):
                 {
                     "message":
                         "Employee transferred successfully.",
-                    "transfer": serializer.data,
+                    "transfer":
+                        serializer.data,
                 },
                 status=status.HTTP_200_OK,
             )
 
         except DjangoValidationError as error:
+
             return Response(
                 {
-                    "error": error.messages
+                    "detail": error.messages
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-    # DB-005
+    # =================================================
+    # DB-005: TRANSFER HISTORY
+    # =================================================
+
     @action(
         detail=True,
         methods=["get"],
@@ -174,9 +304,13 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     ):
 
         try:
-            employee = Employee.objects.get(pk=pk)
+
+            employee = Employee.objects.get(
+                pk=pk
+            )
 
         except Employee.DoesNotExist:
+
             return Response(
                 {
                     "error": "Employee not found."
@@ -203,31 +337,48 @@ class EmployeeViewSet(viewsets.ModelViewSet):
             serializer.data,
             status=status.HTTP_200_OK,
         )
-    # =====================================================
+
+
+# =====================================================
 # SEC-001: User Registration API
 # =====================================================
 
 class RegisterView(APIView):
 
-    permission_classes = [AllowAny]
+    permission_classes = [
+        AllowAny
+    ]
+
     authentication_classes = []
 
-    def post(self, request):
+    def post(
+        self,
+        request
+    ):
 
-        serializer = RegistrationSerializer(data=request.data)
+        serializer = RegistrationSerializer(
+            data=request.data
+        )
 
         if serializer.is_valid():
+
             user = serializer.save()
 
             return Response(
                 {
-                    "message": "User registered successfully.",
+                    "message":
+                        "User registered successfully.",
                     "user": {
-                        "id": user.id,
-                        "username": user.username,
-                        "email": user.email,
-                        "first_name": user.first_name,
-                        "last_name": user.last_name,
+                        "id":
+                            user.id,
+                        "username":
+                            user.username,
+                        "email":
+                            user.email,
+                        "first_name":
+                            user.first_name,
+                        "last_name":
+                            user.last_name,
                     }
                 },
                 status=status.HTTP_201_CREATED
@@ -237,33 +388,51 @@ class RegisterView(APIView):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
-    # =====================================================
+
+
+# =====================================================
 # SEC-001: User Login API
 # =====================================================
 
 class LoginView(APIView):
 
-    permission_classes = [AllowAny]
+    permission_classes = [
+        AllowAny
+    ]
+
     authentication_classes = []
 
-    def post(self, request):
+    def post(
+        self,
+        request
+    ):
 
         serializer = LoginSerializer(
             data=request.data
         )
 
         if serializer.is_valid():
-            user = serializer.validated_data["user"]
+
+            user = (
+                serializer
+                .validated_data["user"]
+            )
 
             return Response(
                 {
-                    "message": "Login successful.",
+                    "message":
+                        "Login successful.",
                     "user": {
-                        "id": user.id,
-                        "username": user.username,
-                        "email": user.email,
-                        "first_name": user.first_name,
-                        "last_name": user.last_name,
+                        "id":
+                            user.id,
+                        "username":
+                            user.username,
+                        "email":
+                            user.email,
+                        "first_name":
+                            user.first_name,
+                        "last_name":
+                            user.last_name,
                     }
                 },
                 status=status.HTTP_200_OK
@@ -272,4 +441,28 @@ class LoginView(APIView):
         return Response(
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
+        )
+    # =====================================================
+# SEC-003: Employee Own Profile
+# =====================================================
+
+class MyProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            employee = Employee.objects.get(user=request.user)
+        except Employee.DoesNotExist:
+            return Response(
+                {
+                    "detail": "Employee profile not found."
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = EmployeeSerializer(employee)
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK,
         )

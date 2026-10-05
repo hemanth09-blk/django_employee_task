@@ -2,7 +2,7 @@ from django.urls import include, path
 
 from .routers import router
 from . import report_views
-from.views import LoginView, RegisterView
+from.views import LoginView, RegisterView, MyProfileView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from employees.views import (
     employee_details_unoptimized,
@@ -11,6 +11,12 @@ from employees.views import (
 
 
 urlpatterns = [
+    path(
+        "profile/me" ,
+        MyProfileView.as_view(),
+        name="my-profile",
+    ),
+        
     path(
         "auth/token/",
         TokenObtainPairView.as_view(),
