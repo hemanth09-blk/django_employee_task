@@ -5,7 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
 from rest_framework import serializers
 
-from employees.models import Employee, EmployeeTransfer
+from employees.models import Employee, EmployeeTransfer, EmployeeProfile
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
@@ -316,3 +316,28 @@ class LoginSerializer(serializers.Serializer):
         attrs["user"] = authenticated_user
 
         return attrs
+    # =========================================================
+# Employee Profile Serializer - SEC-005
+# =========================================================
+
+class EmployeeProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeProfile
+        fields = [
+            "id",
+            "employee",
+            "date_of_birth",
+            "address",
+            "emergency_contact",
+            "blood_group",
+            "profile_image",
+            "created_at",
+            "updated_at",
+        ]
+
+        read_only_fields = [
+            "id",
+            "employee",
+            "created_at",
+            "updated_at",
+        ]

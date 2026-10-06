@@ -114,3 +114,25 @@ class IsAdminOrHROrManagerOrEmployee(BasePermission):
                 ]
             ).exists()
         )
+    
+class IsOwnerOrHROrAdmin(BasePermission):
+    """
+      Employees can access only their own profile.
+       HR and Admin can access all employee profiles.
+    """
+
+    def has_permission(self, request, view):
+        return request.user.is_authenticated
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+
+        # Admin and HR can access all profiles
+        if user.groups.filter(name__in=["ADMIN", "HR"]).exists():
+            return True
+
+        # Employee can access only their own profile
+        return (
+            hasattr(user, "employee")
+            and obj.employee.user_id == user.id
+        )

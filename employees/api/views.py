@@ -15,9 +15,10 @@ from .permissions import (
     IsAdminOrHR,
     IsAdminOrHROrManager,
     IsAdminOrHROrManagerOrEmployee,
+    IsOwnerOrHROrAdmin,
 )
 
-from ..models import Employee, EmployeeTransfer
+from ..models import Employee, EmployeeTransfer,EmployeeProfile
 from ..services.employee_transfer_service import EmployeeTransferService
 
 from .serializers import (
@@ -25,6 +26,7 @@ from .serializers import (
     EmployeeTransferSerializer,
     RegistrationSerializer,
     LoginSerializer,
+    EmployeeProfileSerializer,
 )
 
 from .pagination import EmployeePagination
@@ -446,23 +448,137 @@ class LoginView(APIView):
 # SEC-003: Employee Own Profile
 # =====================================================
 
+# =====================================================
+# SEC-005: My Employee Profile
+# =====================================================
+
 class MyProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsOwnerOrHROrAdmin]
+
+    def get_profile(self, request):
+        try:
+            employee = Employee.objects.get(
+                user=request.user
+            )
+        except Employee.DoesNotExist:
+            return None
+
+        profile, created = EmployeeProfile.objects.get_or_create(
+            employee=employee
+        )
+
+        return profile
 
     def get(self, request):
-        try:
-            employee = Employee.objects.get(user=request.user)
-        except Employee.DoesNotExist:
+        profile = self.get_profile(request)
+
+        if profile is None:
             return Response(
-                {
-                    "detail": "Employee profile not found."
-                },
+                {"detail": "Employee profile not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        serializer = EmployeeSerializer(employee)
+        self.check_object_permissions(request, profile)
+
+        serializer = EmployeeProfileSerializer(profile)
 
         return Response(
             serializer.data,
             status=status.HTTP_200_OK,
+        )
+
+    def patch(self, request):
+        profile = self.get_profile(request)
+
+        if profile is None:
+            return Response(
+                {"detail": "Employee profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        self.check_object_permissions(request, profile)
+
+        serializer = EmployeeProfileSerializer(
+            profile,
+            data=request.data,
+            partial=True,
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+
+            return Response(
+                serializer.data,
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+# =====================================================
+# SEC-005: Employee Profile by ID
+# =====================================================
+
+class EmployeeProfileView(APIView):
+    permission_classes = [IsOwnerOrHROrAdmin]
+
+    def get_profile(self, employee_id):
+        try:
+            return EmployeeProfile.objects.select_related(
+                "employee__user"
+            ).get(
+                employee_id=employee_id
+            )
+        except EmployeeProfile.DoesNotExist:
+            return None
+
+    def get(self, request, employee_id):
+        profile = self.get_profile(employee_id)
+
+        if profile is None:
+            return Response(
+                {"detail": "Employee profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        self.check_object_permissions(request, profile)
+
+        serializer = EmployeeProfileSerializer(profile)
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK,
+        )
+
+    def patch(self, request, employee_id):
+        profile = self.get_profile(employee_id)
+
+        if profile is None:
+            return Response(
+                {"detail": "Employee profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        self.check_object_permissions(request, profile)
+
+        serializer = EmployeeProfileSerializer(
+            profile,
+            data=request.data,
+            partial=True,
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+
+            return Response(
+                serializer.data,
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST,
         )
