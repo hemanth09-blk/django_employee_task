@@ -111,7 +111,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
             "active",
         ]:
             permission_classes = [
-                IsAdminOrHROrManager
+                IsAdminOrHROrManagerOrEmployee
             ]
 
         # ADMIN + HR + MANAGER + EMPLOYEE
@@ -132,7 +132,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         # View transfer history
         elif self.action == "transfer_history":
             permission_classes = [
-                IsAdminOrHROrManager
+                IsAdminOrHROrManagerOrEmployee
             ]
 
         # Default
@@ -582,3 +582,19 @@ class EmployeeProfileView(APIView):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST,
         )
+    # =====================================================
+# ADV-001: Health Check
+# =====================================================
+
+class HealthCheckView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        return Response(
+            {
+                "status": "healthy",
+                "service": "employee_management_api",
+            },
+            status=status.HTTP_200_OK,
+        )   

@@ -168,3 +168,35 @@ class EmployeeTransfer(models.Model):
             f"{self.from_department.code} → "
             f"{self.to_department.code}"
         )
+class EmployeeAudit(models.Model):
+    ACTION_CHOICES = [
+        ("CREATE", "Create"),
+        ("UPDATE", "Update"),
+    ]
+
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_logs",
+    )
+
+    action = models.CharField(
+        max_length=20,
+        choices=ACTION_CHOICES,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["employee", "created_at"]),
+            models.Index(fields=["action"]),
+        ]
+
+    def _str_(self):
+        return f"{self.employee} - {self.action}"

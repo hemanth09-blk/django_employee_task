@@ -2,7 +2,7 @@ from django.urls import include, path
 
 from .routers import router
 from . import report_views
-from.views import LoginView, RegisterView, MyProfileView, EmployeeProfileView
+from.views import LoginView, RegisterView, MyProfileView, EmployeeProfileView, HealthCheckView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from employees.views import (
     employee_details_unoptimized,
@@ -16,6 +16,12 @@ urlpatterns = [
         MyProfileView.as_view(),
         name="my-profile",
     ),
+    
+    path(
+    "health/",
+    HealthCheckView.as_view(),
+    name="health",
+),
     path(
         "employees/<int:employee_id>/profile/" ,
         EmployeeProfileView.as_view(),
