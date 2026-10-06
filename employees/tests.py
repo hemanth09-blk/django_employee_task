@@ -1,16 +1,37 @@
 from datetime import date
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
 from .models import Employee, Department
 
-
 class EmployeeAPITest(APITestCase):
 
     def setUp(self):
-        # Create Department first because Employee.department
-        # is a ForeignKey to Department
+        User = get_user_model()
+
+        # Create test user
+        self.user = User.objects.create_user(
+            username="testadmin",
+            password="TestPassword123!"
+        )
+
+        # Create ADMIN group
+        admin_group, _ = Group.objects.get_or_create(
+            name="ADMIN"
+        )
+
+        # Add user to ADMIN group
+        self.user.groups.add(admin_group)
+
+        # Authenticate the test client
+        self.client.force_authenticate(
+            user=self.user
+        )
+
+        # Create Department
         self.department = Department.objects.create(
             name="IT",
             code="IT"
