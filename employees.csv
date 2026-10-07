@@ -1,0 +1,35 @@
+employee_code,first_name,last_name,email,phone,department,designation,salary,joining_date,is_active
+AUDIT001,Audit,Test,audit001@example.com,9876543210,BE,Senior Test Engineer,50000.00,2026-10-06,True
+EMP998,Security,Test,security998@example.com,,BE,Tester,50000.00,2026-10-06,True
+EMP026,Employee26,User,employee26@company.com,9000000026,BE,Software Developer,50000.00,2026-01-01,True
+EMP021,Employee21,User,employee21@company.com,9000000021,BE,Software Developer,50000.00,2026-01-01,True
+EMP016,Employee16,User,employee16@company.com,9000000016,BE,Software Developer,50000.00,2026-01-01,True
+EMP011,Employee11,User,employee11@company.com,9000000011,BE,Software Developer,50000.00,2026-01-01,True
+EMP001,John,Doe,john@example.com,1234567890,BE,Senior Software Developer,55000.00,2026-09-22,True
+EMP031,HR,Test,hrtest031@example.com,9876543210,FE,Developer,50000.00,2026-10-05,True
+EMP027,Employee27,User,employee27@company.com,9000000027,FE,Software Developer,50000.00,2026-01-01,True
+EMP022,Employee22,User,employee22@company.com,9000000022,FE,Software Developer,50000.00,2026-01-01,True
+EMP017,Employee17,User,employee17@company.com,9000000017,FE,Software Developer,50000.00,2026-01-01,True
+EMP012,Employee12,User,employee12@company.com,9000000012,FE,Software Developer,50000.00,2026-01-01,True
+EMP007,Employee7,User,employee7@company.com,9000000007,FE,Software Developer,50000.00,2026-01-01,True
+EMP003,Test,Phone,uniquephone@example.com,9999999999,QA,Developer,50000.00,2026-09-22,True
+EMP028,Employee28,User,employee28@company.com,9000000028,QA,Software Developer,50000.00,2026-01-01,True
+EMP023,Employee23,User,employee23@company.com,9000000023,QA,Software Developer,50000.00,2026-01-01,True
+EMP018,Employee18,User,employee18@company.com,9000000018,QA,Software Developer,50000.00,2026-01-01,True
+EMP013,Employee13,User,employee13@company.com,9000000013,QA,Software Developer,50000.00,2026-01-01,True
+EMP008,Employee8,User,employee8@company.com,9000000008,QA,Software Developer,50000.00,2026-01-01,True
+EMP029,Employee29,User,employee29@company.com,9000000029,HR,Software Developer,50000.00,2026-01-01,True
+EMP024,Employee24,User,employee24@company.com,9000000024,HR,Software Developer,50000.00,2026-01-01,True
+EMP019,Employee19,User,employee19@company.com,9000000019,HR,Software Developer,50000.00,2026-01-01,True
+EMP014,Employee14,User,employee14@company.com,9000000014,HR,Software Developer,50000.00,2026-01-01,True
+EMP009,Employee9,User,employee9@company.com,9000000009,HR,Software Developer,50000.00,2026-01-01,True
+EMP004,Duplicate,Phone,duplicatephone@example.com,9999999999,HR,Developer,50000.00,2026-09-22,True
+EMP006,Employee6,User,employee6@company.com,9000000006,FIN,Software Developer,50000.00,2026-01-01,True
+EMP025,Employee25,User,employee25@company.com,9000000025,FIN,Software Developer,50000.00,2026-01-01,True
+EMP020,Employee20,User,employee20@company.com,9000000020,FIN,Software Developer,50000.00,2026-01-01,True
+EMP015,Employee15,User,employee15@company.com,9000000015,FIN,Software Developer,50000.00,2026-01-01,True
+EMP010,Employee10,User,employee10@company.com,9000000010,FIN,Software Developer,50000.00,2026-01-01,True
+EMP005,Employee5,User,employee5@company.com,9000000005,FIN,Software Developer,50000.00,2026-01-01,True
+EMP999,Test,Employee,finaltest@example.com,8888888888,FIN,Developer,50000.00,2026-09-22,True
+EMP002,Sarah,Johnson,sarah.johnson@example.com,9876543211,IT,Senior Developer,80000.00,2023-06-10,True
+EMP1001,New Employee,User,employee1001@company.com,9000000101,IT,Junior Developer,50000.00,2026-01-01,True
