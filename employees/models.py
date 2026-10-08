@@ -198,5 +198,80 @@ class EmployeeAudit(models.Model):
             models.Index(fields=["action"]),
         ]
 
-    def _str_(self):
+    def __str__(self):
         return f"{self.employee} - {self.action}"
+    
+class Notification(models.Model):
+    NOTIFICATION_TYPE_CHOICES = [
+        ("WELCOME", "Welcome"),
+        ("SYSTEM", "System"),
+    ]
+
+    STATUS_CHOICES = [
+        ("PENDING", "Pending"),
+        ("SENT", "Sent"),
+        ("FAILED", "Failed"),
+    ]
+
+    recipient = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+        null=True,
+        blank=True,
+    )
+
+    employee = models.ForeignKey(
+        "Employee",
+        on_delete=models.CASCADE,
+        related_name="notifications",
+        null=True,
+        blank=True,
+    )
+
+    notification_type = models.CharField(
+        max_length=30,
+        choices=NOTIFICATION_TYPE_CHOICES,
+        default="SYSTEM",
+    )
+
+    title = models.CharField(max_length=255)
+
+    message = models.TextField()
+
+    recipient_email = models.EmailField(
+        null=True,
+        blank=True,
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="PENDING",
+    )
+
+    is_read = models.BooleanField(default=False)
+
+    error_message = models.TextField(
+        null=True,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    read_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["recipient"]),
+            models.Index(fields=["is_read"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.title} - {self.status}"

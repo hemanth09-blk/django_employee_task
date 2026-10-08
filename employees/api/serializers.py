@@ -5,7 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
 from rest_framework import serializers
 
-from employees.models import Employee, EmployeeTransfer, EmployeeProfile
+from employees.models import Employee, EmployeeTransfer, EmployeeProfile, Notification
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
@@ -340,4 +340,34 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             "employee",
             "created_at",
             "updated_at",
+        ]
+        # =========================================================
+# Notification Serializer - ADV-003
+# =========================================================
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = [
+            "id",
+            "notification_type",
+            "title",
+            "message",
+            "recipient_email",
+            "status",
+            "is_read",
+            "read_at",
+            "created_at",
+        ]
+
+        read_only_fields = [
+            "id",
+            "notification_type",
+            "title",
+            "message",
+            "recipient_email",
+            "status",
+            "is_read",
+            "read_at",
+            "created_at",
         ]

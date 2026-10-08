@@ -5,7 +5,7 @@ from django.contrib.auth.models import Group
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
-from .models import Employee, Department
+from .models import Employee, Department, Notification
 
 class EmployeeAPITest(APITestCase):
 
@@ -207,3 +207,84 @@ class EmployeeAPITest(APITestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+class NotificationAPITest(APITestCase):
+    def setUp(self):
+        User = get_user_model()
+
+        self.user = User.objects.create_user(
+            username="notification_test",
+            password="Notification@123"
+        )
+
+        self.client.force_authenticate(
+            user=self.user
+        )
+
+        self.notification = Notification.objects.create(
+            recipient=self.user,
+            notification_type="SYSTEM",
+            title="Test Notification",
+            message="This is a test notification for the Notification API.",
+            recipient_email="notification_test@example.com",
+            status="SENT",
+            is_read=False
+        )
+
+    def test_notification_list(self):
+        response = self.client.get(
+            reverse("notification-list")
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+
+    def test_mark_notification_as_read(self):
+        response = self.client.patch(
+            reverse(
+                "notification-mark-as-read",
+                args=[self.notification.id]
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        self.notification.refresh_from_db()
+
+        self.assertTrue(
+            self.notification.is_read
+        )
+
+        self.assertIsNotNone(
+            self.notification.read_at
+        )
+
+    def test_notifications_require_authentication(self):
+        self.client.force_authenticate(
+            user=None
+        )
+
+        response = self.client.get(
+            reverse("notification-list")
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_notification_not_visible_to_other_user(self):
+        User = get_user_model()
+
+        other_user = User.objects.create_user(
+            username="other_notification_user",
+            password="Notification@123"
+        )
+
+        self.client.force_authenticate(
+            user=other_user
+        )
+
+        response = self.client.get(
+            reverse("notification-list")
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 0)

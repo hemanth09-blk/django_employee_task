@@ -3,6 +3,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import filters, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from ..models import Notification
+from ..services.notification_service import NotificationService
+from .serializers import NotificationSerializer
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django_filters.rest_framework import DjangoFilterBackend
@@ -24,6 +27,7 @@ from ..services.employee_transfer_service import EmployeeTransferService
 from .serializers import (
     EmployeeSerializer,
     EmployeeTransferSerializer,
+    NotificationSerializer,
     RegistrationSerializer,
     LoginSerializer,
     EmployeeProfileSerializer,
@@ -598,3 +602,38 @@ class HealthCheckView(APIView):
             },
             status=status.HTTP_200_OK,
         )   
+    # =====================================================
+# Notification ViewSet
+# =====================================================
+
+class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
+
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(
+            recipient=self.request.user
+        ).order_by("-created_at")
+
+    @action(
+        detail=True,
+        methods=["patch"],
+        url_path="read"
+    )
+    def mark_as_read(self, request, pk=None):
+
+        notification = self.get_object()
+
+        if not notification.is_read:
+            NotificationService.mark_as_read(notification)
+            notification.refresh_from_db()
+
+        serializer = self.get_serializer(notification)
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK
+        )
+    from django.contrib.auth.models import User
+
