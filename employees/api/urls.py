@@ -7,6 +7,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from employees.views import (
     employee_details_unoptimized,
     employee_details_optimized,
+    generate_employee_report_async,
 )    
 
 
@@ -105,10 +106,15 @@ urlpatterns = [
         name="employees-with-multiple-projects",
     ),
 
+    # ADV-004 — Celery Background Processing
     path(
-        "reports/employees-without-projects/",
-        report_views.employees_without_projects,
-        name="employees-without-projects",
+        "reports/employee-report/async/",
+        report_views.employee_report_async,
+        name="employee-report-async",
     ),
-
-]    
+    path(
+        "reports/employee-report/status/<str:task_id>/",
+        report_views.employee_report_status,
+        name="employee-report-status",
+    ),
+]

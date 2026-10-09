@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import generate_employee_report
 
 
 urlpatterns = [
@@ -30,6 +31,11 @@ urlpatterns = [
         "reports/salary-summary/",
         views.salary_summary,
         name="salary-summary",
+    ),
+    path(
+        "reports/generate-employee-report/",
+        generate_employee_report,
+        name="generate-employee-report",
     ),
 
 ]    

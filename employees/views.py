@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import Employee
+from .tasks import generate_employee_report
 from .orm_reports import (
     get_department_summary,
     get_project_summary,
@@ -591,3 +592,51 @@ def employee_details_optimized(request):
         },
         status=200,
     )
+# ============================================================
+# ADV-004 — CELERY BACKGROUND PROCESSING
+# ============================================================
+
+def generate_employee_report_async(request):
+    """
+    ADV-004:
+    Trigger employee report generation as a background Celery task.
+
+    GET /api/v1/reports/employee-report/async/
+    """
+
+    if request.method != "POST":
+        return JsonResponse(
+            {"error": "Method not allowed"},
+            status=405,
+        )
+
+    try:
+        result = generate_employee_report.delay()
+
+        logger.info(
+            "Employee report task submitted successfully: %s",
+            result.id,
+        )
+
+        return JsonResponse(
+            {
+                "status": "accepted",
+                "message": "Employee report generation started",
+                "task_id": result.id,
+            },
+            status=202,
+        )
+
+    except Exception as exc:
+        logger.exception(
+            "Failed to submit employee report task: %s",
+            exc,
+        )
+
+        return JsonResponse(
+            {
+                "status": "failed",
+                "message": "Unable to submit background task",
+            },
+            status=503,
+        )
