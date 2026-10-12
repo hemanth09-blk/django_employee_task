@@ -19,6 +19,16 @@ Response times will be measured using the same API request under three condition
 - Cache hit (subsequent request)
 
 Actual response times will be recorded in milliseconds after testing. No performance improvement will be claimed without measurements.
+Initial Benchmark Results
+
+Endpoint| Cache Condition| Response Time| HTTP Status
+Department summary| Cache miss| 2.588 seconds| 200
+Department summary| Cache hit| 3 ms| 200
+Department summary| Uncached ORM endpoint| 114 ms| 200
+
+Observation: The cached department summary returned in approximately 3 ms on a cache hit. The first cached request took approximately 2.588 seconds, including cache-miss processing and storing the result. The uncached ORM endpoint returned in 114 ms.
+
+Benchmark limitation: The uncached and cached endpoints may use different view implementations. Repeat measurements against equivalent data and logic before drawing a definitive performance conclusion.
 
 4. TTL Strategy
 
