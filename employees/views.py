@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import Employee
+from .cache_service import get_cached_department_summary
 from .tasks import generate_employee_report
 from .orm_reports import (
     get_department_summary,
@@ -325,43 +326,32 @@ def employee_detail(request, id):
 
 def department_summary(request):
     """
-    DB-003:
-    Department-wise employee statistics.
-
-    GET /api/v1/reports/department-summary/
+    ADV-005:
+    Cached department-wise employee statistics.
     """
-
     if request.method != "GET":
         return JsonResponse(
             {"error": "Method not allowed"},
             status=405,
         )
 
-    departments = get_department_summary()
+    try:
+        data = get_cached_department_summary()
 
-    data = []
+        return JsonResponse(
+            data,
+            safe=False,
+            status=200,
+        )
 
-    for department in departments:
-        data.append({
-            "department": department.name,
-            "employee_count": department.employee_count,
-            "average_salary": (
-                float(department.average_salary)
-                if department.average_salary is not None
-                else 0
-            ),
-            "maximum_salary": (
-                float(department.maximum_salary)
-                if department.maximum_salary is not None
-                else 0
-            ),
-        })
-
-    return JsonResponse(
-        data,
-        safe=False,
-        status=200,
-    )
+    except Exception:
+        logger.exception(
+            "Failed to retrieve cached department summary"
+        )
+        return JsonResponse(
+            {"error": "Unable to retrieve department summary"},
+            status=503,
+        )
 
 
 def project_summary(request):

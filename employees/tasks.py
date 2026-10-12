@@ -1,5 +1,7 @@
 import logging
 
+from datetime import timedelta
+from django.utils import timezone
 from celery import shared_task
 
 logger = logging.getLogger(__name__)
@@ -230,3 +232,43 @@ def process_employee_csv(self, csv_file_path):
             exc=exc,
             countdown=60 * (2 ** self.request.retries),
         )
+@shared_task(bind=True, max_retries=3)
+def daily_employee_report_task(self):
+    """Generate the daily employee report."""
+    logger.info("Daily employee report task started")
+
+    try:
+        result = generate_employee_report.apply()
+        logger.info("Daily employee report task completed")
+        return result.get()
+    except Exception as exc:
+        logger.exception("Daily employee report task failed")
+        raise self.retry(
+            exc=exc,
+            countdown=60 * (2 ** self.request.retries),
+        )
+    
+@shared_task
+def deactivate_old_employees_task():
+    """Deactivate employees who have been inactive for over 365 days."""
+    from employees.models import Employee
+
+    cutoff_date = timezone.now().date() - timedelta(days=365)
+
+    updated_count = Employee.objects.filter(
+        is_active=True,
+        joining_date__lt=cutoff_date,
+    ).update(is_active=False)
+
+    logger.info(
+        "Inactive employee maintenance completed. "
+        "Employees deactivated=%s",
+        updated_count,
+    )
+
+    return {
+        "status": "success",
+        "employees_deactivated": updated_count,
+    }
+
+

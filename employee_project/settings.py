@@ -269,3 +269,26 @@ CELERY_RESULT_SERIALIZER = "json"
 
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = "Asia/Kolkata"
+
+# Redis Cache Configuration
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+        "KEY_PREFIX": "employee_management",
+        "TIMEOUT": 300,
+    }
+}
+CELERY_BEAT_SCHEDULE = {
+"daily-employee-report": {
+"task": "employees.tasks.daily_employee_report_task",
+"schedule": 86400.0,  # Every 24 hours
+},
+"deactivate-old-employees-daily": {
+"task": "employees.tasks.deactivate_old_employees_task",
+"schedule": 86400.0,  # Every 24 hours
+},
+}
