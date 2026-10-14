@@ -3,6 +3,7 @@ import logging
 from datetime import timedelta
 from django.utils import timezone
 from celery import shared_task
+from django.db import OperationalError
 
 logger = logging.getLogger(__name__)
 
@@ -247,9 +248,15 @@ def daily_employee_report_task(self):
             exc=exc,
             countdown=60 * (2 ** self.request.retries),
         )
-    
-@shared_task
-def deactivate_old_employees_task():
+@shared_task(
+    bind=True,
+    max_retries=3,
+    autoretry_for=(OperationalError,),
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
+)
+def deactivate_old_employees_task(self):
     """Deactivate employees who have been inactive for over 365 days."""
     from employees.models import Employee
 
@@ -270,5 +277,20 @@ def deactivate_old_employees_task():
         "status": "success",
         "employees_deactivated": updated_count,
     }
-
-
+@shared_task(
+    bind=True,
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
+def test_worker_recovery_task(self, marker):
+    """Test task redelivery after unexpected worker loss."""
+    logger.info(
+        "Worker recovery test executed. marker=%s task_id=%s",
+        marker,
+        self.request.id,
+    )
+    return {
+        "status": "success",
+        "marker": marker,
+        "task_id": self.request.id,
+    }

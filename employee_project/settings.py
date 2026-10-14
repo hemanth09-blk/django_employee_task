@@ -270,6 +270,21 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = "Asia/Kolkata"
 
+# Reliability settings
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+
+# Task execution limits (seconds)
+CELERY_TASK_SOFT_TIME_LIMIT = 240
+CELERY_TASK_TIME_LIMIT = 300
+
+# Broker connection recovery
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_CONNECTION_MAX_RETRIES = 10
+
+# Redis Cache Configuration
+
 # Redis Cache Configuration
 CACHES = {
     "default": {
