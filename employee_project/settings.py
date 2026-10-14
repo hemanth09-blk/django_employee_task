@@ -14,6 +14,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
+from celery.schedules import crontab
 
 load_dotenv()
 
@@ -165,7 +166,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
@@ -260,8 +261,14 @@ LOGGING = {
     },
 }
 # Celery Configuration
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+CELERY_BROKER_URL = os.getenv(
+    "CELERY_BROKER_URL",
+    "redis://localhost:6379/0",
+)
+CELERY_RESULT_BACKEND = os.getenv(
+    "CELERY_RESULT_BACKEND",
+    "redis://localhost:6379/0",
+)
 
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
@@ -269,13 +276,14 @@ CELERY_RESULT_SERIALIZER = "json"
 
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = "Asia/Kolkata"
+CELERY_ENABLE_UTC = True
 
 # Reliability settings
 CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_REJECT_ON_WORKER_LOST = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 
-# Task execution limits (seconds)
+# Task execution limits
 CELERY_TASK_SOFT_TIME_LIMIT = 240
 CELERY_TASK_TIME_LIMIT = 300
 
@@ -297,13 +305,14 @@ CACHES = {
         "TIMEOUT": 300,
     }
 }
+
 CELERY_BEAT_SCHEDULE = {
 "daily-employee-report": {
 "task": "employees.tasks.daily_employee_report_task",
-"schedule": 86400.0,  # Every 24 hours
+"schedule": crontab(hour=8, minute=0),
 },
 "deactivate-old-employees-daily": {
 "task": "employees.tasks.deactivate_old_employees_task",
-"schedule": 86400.0,  # Every 24 hours
+"schedule": crontab(hour=1, minute=0),
 },
 }
