@@ -94,24 +94,35 @@ A successful ping confirms worker responsiveness but does not prove that every t
 The backend uses the following components:
 
 - Django: Provides APIs and business logic.
-- Redis database 0: Celery message broker and configured result backend.
-- Redis database 1: Django cache.
+- Redis database 0: Celery message broker.
+- Redis database 1: Django application cache.
+- Redis database 2: Celery task result backend.
 - Celery worker: Executes background tasks.
 - Celery Beat: Dispatches scheduled tasks.
 - SQL database: Stores employee and application data.
 
-For deployment, run Django, Redis, the Celery worker, and Celery Beat as separate managed services or containers. Configure persistent storage, environment variables, logging, and restart policies appropriately.
+For deployment, run Django, Redis, the Celery worker, and Celery Beat as separate managed services or containers. Configure persistent storage, environment variables, logging, monitoring, and restart policies appropriately.
 
 8. Verification Summary
 
-The following checks have been observed during development:
+Verified during development
 
-- Worker ping returned "pong".
+- Worker responded to the health check.
 - Registered tasks were visible.
 - Django system checks passed.
 - Redis broker and cache connectivity checks returned "True".
-- Queue-depth check returned "0".
+- The queue-depth check returned "0" at the time of observation.
 - The employee report task completed successfully.
-- The retry test completed successfully after three retry attempts.
+- The retry demonstration task retried twice and reached its expected final failure.
+- Both configured Celery Beat jobs were dispatched and completed successfully.
+- Two submissions using the same marker executed successfully with different task IDs.
 
-Worker restart and broker-outage recovery should be marked complete only after their behavior has been tested and observed.
+Pending verification
+
+- Actual worker-process loss followed by confirmed task redelivery.
+- Redis broker interruption followed by confirmed recovery.
+- Idempotency protection against duplicate side effects.
+- Quantitative performance comparison against the baseline.
+- Rollback procedure validation.
+
+A successful worker ping, an empty queue, or a scheduled-task dispatch does not independently prove complete system recovery. Mark pending checks complete only after observing and recording their results.

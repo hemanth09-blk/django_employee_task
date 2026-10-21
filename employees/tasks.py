@@ -212,26 +212,29 @@ def send_welcome_email(self, employee_id):
 # --------------------------------------------------
 # Retry demonstration task
 # --------------------------------------------------
-
-@shared_task(bind=True, max_retries=3)
-def test_retry_task(self):
-    task_name, task_id, started_at = get_task_context(self)
+@shared_task(bind=True, max_retries=2)
+def test_final_failure_task(self):
+    """Intentionally fail after two retries for recovery testing."""
+    task_id = self.request.id
+    attempt = self.request.retries
 
     logger.info(
-        "Retry test attempt=%s task_id=%s",
-        self.request.retries,
+        "Final failure test: attempt=%s task_id=%s",
+        attempt,
         task_id,
     )
 
-    if self.request.retries < 3:
-        raise self.retry(countdown=5)
+    if attempt < 2:
+        raise self.retry(
+            exc=RuntimeError("Intentional recovery test failure"),
+            countdown=2,
+        )
 
-    log_task_execution(
-        task_name, task_id, started_at, "success"
+    logger.error(
+        "Final failure test exhausted retries: task_id=%s",
+        task_id,
     )
-
-    return "Retry test completed successfully"
-
+    raise RuntimeError("Intentional final failure test")
 
 # --------------------------------------------------
 # Employee report task
@@ -446,4 +449,18 @@ def test_worker_recovery_task(self, marker):
         "status": "success",
         "marker": marker,
         "task_id": task_id,
+    }
+@shared_task(
+    bind=True,
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
+def test_slow_recovery_task(self, marker):
+    print(f"STARTED: marker={marker}, task_id={self.request.id}")
+    time.sleep(30)
+    print(f"COMPLETED: marker={marker}, task_id={self.request.id}")
+    return {
+        "status": "success",
+        "marker": marker,
+        "task_id": self.request.id,
     }
