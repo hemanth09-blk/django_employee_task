@@ -29,8 +29,8 @@ The application loads its configuration from Django settings using the "CELERY_"
 
 Important configuration values:
 
-- Broker URL: "redis://127.0.0.1:6379/0"
-- Result backend: "redis://127.0.0.1:6379/2"
+- Broker URL: "redis://localhost:6379/0"
+- Result backend: "redis://localhost:6379/2"
 - Timezone: "Asia/Kolkata"
 - UTC support: Enabled
 - Task started tracking: Enabled
@@ -64,9 +64,14 @@ Step 1: Start Redis
 
 Ensure the local Redis service is running.
 
+On Windows with Redis running in WSL, use "localhost" for Redis connections.
+The WSL localhost forwarder reaches Redis bound to WSL's loopback interface;
+an IPv4 port-proxy targeting the WSL network IP will not reach that interface.
+Keep Redis bound to loopback rather than exposing it on all network interfaces.
+
 Check connectivity:
 
-python -c "import redis; r=redis.Redis(host='127.0.0.1', port=6379, db=0); print(r.ping())"
+python -c "import redis; r=redis.Redis(host='localhost', port=6379, db=0); print(r.ping())"
 
 Expected output:
 
@@ -124,11 +129,11 @@ celery -A employee_project inspect active_queues
 
 Check Redis broker connectivity
 
-python -c "import redis; r=redis.Redis(host='127.0.0.1', port=6379, db=0); print(r.ping())"
+python -c "import redis; r=redis.Redis(host='localhost', port=6379, db=0); print(r.ping())"
 
 Check Redis cache connectivity
 
-python -c "import redis; r=redis.Redis(host='127.0.0.1', port=6379, db=1); print(r.ping())"
+python -c "import redis; r=redis.Redis(host='localhost', port=6379, db=1); print(r.ping())"
 
 Monitor logs
 

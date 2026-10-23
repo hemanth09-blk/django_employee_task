@@ -6,9 +6,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from ..tasks import generate_employee_report
+from ..cache_service import get_cached_department_summary
 from ..orm_reports import (
     get_salary_summary,
-    get_department_summary,
     get_project_summary,
     get_departments_with_more_than_5_employees,
     get_employees_above_department_average,
@@ -32,14 +32,15 @@ def salary_summary(request):
 
 @require_GET
 def department_summary(request):
-    data = list(
-        get_department_summary().values(
-            "name",
-            "employee_count",
-            "average_salary",
-            "maximum_salary",
-        )
-    )
+    data = [
+        {
+            "name": department["department_name"],
+            "employee_count": department["employee_count"],
+            "average_salary": department["average_salary"],
+            "maximum_salary": department["maximum_salary"],
+        }
+        for department in get_cached_department_summary()
+    ]
     return JsonResponse(data, safe=False, status=200)
 
 

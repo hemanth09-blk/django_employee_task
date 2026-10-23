@@ -1,24 +1,25 @@
 import logging
 
 from django.core.cache import cache
+from django.db import transaction
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
-from .models import Employee, EmployeeAudit
+from .cache_service import CACHE_KEY
+from .models import Department, Employee, EmployeeAudit
 
 logger = logging.getLogger(__name__)
 
-DEPARTMENT_SUMMARY_CACHE_KEY = "department_summary:v1"
-
 
 def invalidate_department_summary_cache():
-    """Invalidate cached department statistics safely."""
-    try:
-        cache.delete(DEPARTMENT_SUMMARY_CACHE_KEY)
-        logger.info("Department summary cache invalidated")
-    except Exception:
-        # Do not fail employee operations because Redis is unavailable.
-        logger.exception("Failed to invalidate department summary cache")
+    def invalidate():
+        try:
+            cache.delete(CACHE_KEY)
+            logger.info("Department summary cache invalidated")
+        except Exception:
+            logger.exception("Failed to invalidate department summary cache")
+
+    transaction.on_commit(invalidate)
 
 
 @receiver(post_save, sender=Employee)
@@ -47,4 +48,10 @@ def employee_audit_signal(sender, instance, created, **kwargs):
 
 @receiver(post_delete, sender=Employee)
 def employee_delete_cache_signal(sender, instance, **kwargs):
+    invalidate_department_summary_cache()
+
+
+@receiver(post_save, sender=Department)
+@receiver(post_delete, sender=Department)
+def department_cache_signal(sender, instance, **kwargs):
     invalidate_department_summary_cache()

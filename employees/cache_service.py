@@ -11,19 +11,7 @@ CACHE_KEY = "department_summary:v1"
 CACHE_TIMEOUT = 300
 
 
-def get_cached_department_summary():
-    try:
-        cached_data = cache.get(CACHE_KEY)
-
-        if cached_data is not None:
-            logger.info("Department summary cache HIT")
-            return cached_data
-
-        logger.info("Department summary cache MISS")
-
-    except Exception:
-        logger.exception("Redis cache read failed")
-
+def build_department_summary():
     departments = Department.objects.annotate(
         employee_count=Count("employees"),
         active_count=Count(
@@ -38,10 +26,8 @@ def get_cached_department_summary():
         maximum_salary=Max("employees__salary"),
     )
 
-    result = []
-
-    for department in departments:
-        result.append({
+    return [
+        {
             "department_id": department.id,
             "department_name": department.name,
             "employee_count": department.employee_count,
@@ -57,12 +43,30 @@ def get_cached_department_summary():
                 if department.maximum_salary is not None
                 else None
             ),
-        })
+        }
+        for department in departments
+    ]
+
+
+def get_cached_department_summary(cache_key=CACHE_KEY):
+    try:
+        cached_data = cache.get(cache_key)
+
+        if cached_data is not None:
+            logger.info("Department summary cache HIT")
+            return cached_data
+
+        logger.info("Department summary cache MISS")
+
+    except Exception:
+        logger.exception("Department summary cache read failed")
+
+    result = build_department_summary()
 
     try:
-        cache.set(CACHE_KEY, result, CACHE_TIMEOUT)
-        logger.info("Department summary stored in Redis")
+        cache.set(cache_key, result, CACHE_TIMEOUT)
+        logger.info("Department summary stored in cache")
     except Exception:
-        logger.exception("Redis cache write failed")
+        logger.exception("Department summary cache write failed")
 
     return result
